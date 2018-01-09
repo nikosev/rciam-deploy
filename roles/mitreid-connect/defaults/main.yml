@@ -1,0 +1,28 @@
+---
+
+install_path: "/srv/"
+tomcat_webapps: "/var/lib/tomcat8/webapps"
+
+
+host: ""
+webapp_name: "oidc"
+
+
+issuer: "http://{{host}}/{{webapp_name}}/"
+
+jdbc_driverClassName: "org.postgresql.Driver"
+jdbc_url: "jdbc:postgresql://localhost/oidcserver"
+jdbc_username: "oidcserver"
+jdbc_password: ""
+
+idp_metadata_url: ""
+idp_entity_id: ""
+idp_public_certificate: ""
+
+sp_entity_id: "http://{{host}}/{{webapp_name}}"
+sp_private_key: ""
+sp_public_certificate: ""
+sp_passphrase: ""
+sp_entity_base_url: "http://{{host}}/{{webapp_name}}"
+
+client_conf_location: "classpath:clientsAndResources.yml"

@@ -1,0 +1,9 @@
+---
+# Clone repo
+- include: clone.yml
+
+# Build project
+- include: build.yml
+
+# Deploy project
+- include: deploy.yml

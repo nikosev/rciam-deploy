@@ -1,0 +1,7 @@
+---
+
+- name: Clone repository
+  git:
+    dest: "{{install_path}}"
+    repo: 'https://github.com/rciam/OpenConext-oidc.git'
+  become: yes

@@ -1,3 +1,11 @@
+[appserver]
+appserver1.aai.example.eu
+appserver2.aai.example.eu
+
+[dbserver]
+dbserver1.aai.example.eu
+dbserver2.aai.example.eu
+
 [sessionservers]
 cache1.aai.example.eu
 cache2.aai.example.eu

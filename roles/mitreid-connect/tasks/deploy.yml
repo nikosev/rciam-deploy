@@ -1,0 +1,66 @@
+---
+
+# Main tasks file for deploy-file role
+
+- name: 'Check that the oidc.war exists'
+  stat:
+    path: "{{tomcat_webapps}}/oidc.war"
+  register: oidc_stat_result
+
+- name: 'Deploy WAR file when WAR file doesnt exists'
+  shell: "cp {{install_path}}/oidc-server/target/oidc-server.war {{ tomcat_webapps }}/oidc.war"
+  when: oidc_stat_result.stat.exists == False
+  tags: [deploy-file]
+
+- name: 'Calculate old WAR file checksum'
+  stat:
+    path: "{{tomcat_webapps}}/oidc.war"
+    checksum_algorithm: sha256
+    get_checksum: yes
+  register: old_oidc_checksum
+  when: oidc_stat_result.stat.exists == True
+
+- name: 'Calculate new WAR file checksum'
+  stat:
+    path: "{{install_path}}/oidc-server/target/oidc-server.war"
+    checksum_algorithm: sha256
+    get_checksum: yes
+  register: new_oidc_checksum
+  when: oidc_stat_result.stat.exists == True
+
+- name: 'Webapp is up-to-date'
+  file:
+    path: "{{install_path}}/oidc-server/target/oidc-server.war"
+    state: absent
+  when: oidc_stat_result.stat.exists == True and old_oidc_checksum.stat.checksum == new_oidc_checksum.stat.checksum
+
+- name: 'Stop Tomcat'
+  service:
+    name: "tomcat8"
+    state: "stopped"
+  become: yes
+  when: oidc_stat_result.stat.exists == True and old_oidc_checksum.stat.checksum != new_oidc_checksum.stat.checksum
+
+- name: 'Delete old WAR file'
+  file:
+    path: "{{tomcat_webapps}}/oidc.war"
+    state: absent
+  when: oidc_stat_result.stat.exists == True and old_oidc_checksum.stat.checksum != new_oidc_checksum.stat.checksum
+
+- name: 'Delete old WAR directory'
+  file:
+    path: "{{tomcat_webapps}}/oidc"
+    state: directory
+  when: oidc_stat_result.stat.exists == True and old_oidc_checksum.stat.checksum != new_oidc_checksum.stat.checksum
+
+- name: 'Deploy WAR file'
+  shell: "cp {{install_path}}/oidc-server/target/oidc-server.war {{ tomcat_webapps }}/oidc.war"
+  when: oidc_stat_result.stat.exists == True and old_oidc_checksum.stat.checksum != new_oidc_checksum.stat.checksum
+  tags: [deploy-file]
+
+- name: 'Start Tomcat'
+  service:
+    name: "tomcat8"
+    state: "started"
+  become: yes
+  when: oidc_stat_result.stat.exists == True and old_oidc_checksum.stat.checksum != new_oidc_checksum.stat.checksum

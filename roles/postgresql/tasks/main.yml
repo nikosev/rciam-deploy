@@ -1,71 +1,34 @@
 # file: postgresql/tasks/main.yml
-#
----
 
-- name: Include OS-specific variables
-  include_vars: "{{ item }}"
+- include_vars: "{{ item }}"
   with_first_found:
-    - "{{ ansible_distribution }}-{{ ansible_distribution_release }}.yml"
-    - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
-    - "{{ ansible_distribution }}.yml"
-    - "{{ ansible_os_family }}.yml"
-  tags:
-    - always
+    - "../vars/{{ ansible_os_family }}.yml"
+    - "../vars/empty.yml"
+  tags: [always]
 
-- name: Define PostgreSQL version
-  set_fact:
-    postgresql_version: "{{ postgresql_default_version }}"
-  when: postgresql_version is not defined
-  tags:
-    - always
+- include: install.yml
+  when: ansible_pkg_mgr == "apt"
+  tags: [postgresql, postgresql-install]
 
-- name: Define PostgreSQL configuration path
-  set_fact:
-    postgresql_conf_path: "{{ postgresql_default_conf_path }}"
-  when: postgresql_conf_path is not defined
-  tags:
-    - always
+# - include: install_yum.yml
+#   when: ansible_pkg_mgr == "yum"
+#   tags: [postgresql, postgresql-install]
 
-- name: Define PostgreSQL data path
-  set_fact:
-    postgresql_data_path: "{{ postgresql_default_data_path }}"
-  when: postgresql_data_path is not defined
-  tags:
-    - always
+# - include: extensions.yml
+#   tags: [postgresql, postgresql-extensions]
 
-- name: Define PostgreSQL service name
-  set_fact:
-    postgresql_service: "{{ postgresql_default_service }}"
-  when: postgresql_service is not defined
-  tags:
-    - always
+- include: configure.yml
+  tags: [postgresql, postgresql-configure]
 
-- name: Define PostgreSQL user
-  set_fact:
-    postgresql_user: "{{ postgresql_default_user }}"
-  when: postgresql_user is not defined
-  tags:
-    - always
+- include: users.yml
+  tags: [postgresql, postgresql-users]
 
-- name: Define PostgreSQL group
-  set_fact:
-    postgresql_group: "{{ postgresql_default_group }}"
-  when: postgresql_group is not defined
-  tags:
-    - always
+- include: databases.yml
+  tags: [postgresql, postgresql-databases]
 
-# Install OS-specific packages
-- include: install-Debian.yml
-  when: ansible_os_family == 'Debian'
-#- include: install-CentOS.yml
-#  when: ansible_os_family == 'CentOS
+- include: users_privileges.yml
+  tags: [postgresql, postgresql-users]
 
-# Apply OS-independent configuration
-- include: configure-common.yml
-
-- name: Ensure PostgreSQL service is started and enabled on boot
-  service:
-    name: "{{ postgresql_service }}"
-    state: "started"
-    enabled: yes
-  become: yes
+- include: monit.yml
+  when: monit_protection is defined and monit_protection == true
+  tags: [postgresql, postgresql-monit]

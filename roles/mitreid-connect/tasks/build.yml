@@ -1,0 +1,102 @@
+---
+
+- name: Create application.oidc.properties file
+  copy:
+    content: ""
+    dest: "{{install_path}}/oidc-server/src/main/resources/application.oidc.properties"
+    group: sys
+    owner: root
+    mode: 0555
+- name: Check IdP Certificate
+  debug:
+    msg: "IdP Certificate is not inserted"
+  when: idp_public_certificate == ""
+
+- name: Generate a Self Signed OpenSSL certificate
+  shell: openssl req -subj '/O=Organization, CN=OIDC/' -newkey rsa:2048 -new -x509 -days 3652 -nodes -out tmp_oidc.crt -keyout tmp_oidc.pem
+  args:
+    chdir: "{{install_path}}/oidc-server/src/main/resources"
+  when: sp_private_key == "" or sp_public_certificate == ""
+
+- name: Generate an OpenSSL private key with passphrase
+  shell: openssl pkcs8 -nocrypt -in tmp_oidc.pem -topk8 -out tmp_oidc.der
+  args:
+    chdir: "{{install_path}}/oidc-server/src/main/resources"
+  when: sp_private_key == "" or sp_public_certificate == ""
+
+- name: clear .der file
+  shell: cat tmp_oidc.der |head -n -1 |tail -n +2 | tr -d '\n' > tmp_privateKey.yml
+  args:
+    chdir: "{{install_path}}/oidc-server/src/main/resources"
+  when: sp_private_key == "" or sp_public_certificate == ""
+
+- name: Set variable privateKey
+  shell: cat tmp_privateKey.yml
+  register: tmp_privateKey
+  args:
+    chdir: "{{install_path}}/oidc-server/src/main/resources"
+  when: sp_private_key == "" or sp_public_certificate == ""
+
+- set_fact: sp_private_key="{{ tmp_privateKey.stdout }}"
+  when: sp_private_key == "" or sp_public_certificate == ""
+
+- name: clear .crt file
+  shell: cat tmp_oidc.crt |head -n -1 |tail -n +2 | tr -d '\n' > tmp_publicCertificate.yml
+  args:
+    chdir: "{{install_path}}/oidc-server/src/main/resources"
+  when: sp_private_key == "" or sp_public_certificate == ""
+
+- name: Set variable publicCertificate
+  shell: cat tmp_publicCertificate.yml
+  register: tmp_publicCertificate
+  args:
+    chdir: "{{install_path}}/oidc-server/src/main/resources"
+  when: sp_private_key == "" or sp_public_certificate == ""
+
+- set_fact: sp_public_certificate="{{ tmp_publicCertificate.stdout }}"
+  when: sp_private_key == "" or sp_public_certificate == ""
+
+- template:
+    src: application.oidc.properties.j2
+    dest: "{{install_path}}/oidc-server/src/main/resources/application.oidc.properties"
+
+- template:
+    src: clientsAndResources.yml.j2
+    dest: "{{install_path}}/oidc-server/src/main/resources/clientsAndResources.yml"
+
+- name: Generate an OpenSSL private key with passphrase
+  shell: mvn compile ; mvn exec:java -Dexec.mainClass="oidc.security.OidcKeystoreGenerator" -Dexec.classpathScope=runtime > src/main/resources/tmp_output.txt
+  args:
+    chdir: "{{install_path}}/oidc-server"
+
+- name: clear .json file
+  shell: cat tmp_output.txt |head -n -9 |tail -n +11 | tr -d '\n' > oidc.keystore.jwks.json
+  args:
+    chdir: "{{install_path}}/oidc-server/src/main/resources"
+
+- name: add prefix .json file
+  shell: sed -i '1 i\{"keys":[' oidc.keystore.jwks.json
+  args:
+    chdir: "{{install_path}}/oidc-server/src/main/resources"
+
+- name: add subfix .json file
+  lineinfile: dest={{install_path}}/oidc-server/src/main/resources/oidc.keystore.jwks.json
+              insertafter=EOF
+              line=']}'
+
+- name: Delete temp files
+  file:
+    path: '{{ item }}'
+    state: absent
+  with_items:
+    - '{{install_path}}/oidc-server/src/main/resources/tmp_oidc.crt'
+    - '{{install_path}}/oidc-server/src/main/resources/tmp_oidc.pem'
+    - '{{install_path}}/oidc-server/src/main/resources/tmp_oidc.der'
+    - '{{install_path}}/oidc-server/src/main/resources/tmp_privateKey.yml'
+    - '{{install_path}}/oidc-server/src/main/resources/tmp_publicCertificate.yml'
+    - '{{install_path}}/oidc-server/src/main/resources/tmp_output.txt'
+
+- name: Build OIDC Server
+  shell: mvn -Dmaven.test.skip=true clean package
+  args:
+    chdir: "{{install_path}}/oidc-server"

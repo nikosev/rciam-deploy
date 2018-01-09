@@ -1,0 +1,20 @@
+# ---
+# ## PostgreSQL
+
+# # Basic settings
+# postgresql_version: 9.3
+# postgresql_encoding: 'UTF-8'
+
+# # List of databases to be created (optional)
+# postgresql_databases:
+#   - name: oidcserver
+#     owner: postgres
+
+# # List of privileges to be applied to databases(optional)
+# postgresql_database_privileges:
+#   - name: postgres
+#     db: oidcserver
+#     type: database
+#     obj: oidcserver
+#     privs: "ALL"
+#     role: postgres

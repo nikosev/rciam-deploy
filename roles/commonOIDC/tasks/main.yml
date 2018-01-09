@@ -1,0 +1,12 @@
+---
+- name: Update package cache
+  apt: update_cache=yes cache_valid_time=86400
+  become: yes
+
+- name: Ensure latest Git, Maven and OpenSSL are installed
+  apt: name={{ item }} state=present
+  with_items:
+    - git
+    - maven
+    - openssl
+  become: yes

@@ -4,4 +4,14 @@
 
 - import_playbook: authservers.yml
 
-- import_playbook: webproxyservers.yml
+- include: webproxyservers.yml
+
+- include: common.yml
+
+- include: java.yml
+
+- include: tomcat.yml
+
+- include: postgresql.yml
+
+- include: deploy.yml
