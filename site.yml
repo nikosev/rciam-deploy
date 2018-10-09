@@ -1,0 +1,10 @@
+---
+ # - include: php.yml
+
+ # - include: apache.yml
+
+ # - include: certbot.yml
+
+ # - include: postgresql.yml
+
+ - include: registry.yml

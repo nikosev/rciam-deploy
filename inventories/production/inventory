@@ -1,0 +1,5 @@
+[appserver]
+example.com
+
+[dbserver]
+example.com
