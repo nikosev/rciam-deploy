@@ -1,0 +1,37 @@
+---
+
+- name: Add database configuration (Debian)
+  template:
+    src: "database.php.j2"
+    dest: "/srv/comanage/registry-current/local/Config/database.php"
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+  when: create_database
+
+- name: Add email configuration (Debian)
+  template:
+    src: "email.php.j2"
+    dest: "/srv/comanage/registry-current/local/Config/email.php"
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+  when: create_email
+# TODO Fix errors
+- name: Setup the shcema
+  shell: cd /srv/comanage/registry-current/app;./Console/cake database
+  become: true
+  become_method: su
+  become_user: www-data:www-data
+  become_flags: '-c'
+
+- name: Registry Setup Script
+  shell: cd /srv/comanage/registry-current/app; ./Console/cake setup --admin-given-name "{{admin_name}}" --admin-family-name \""{{admin_surname}}"\" --admin-username \""{{admin_username}}"\" --enable-pooling="{{enable_pooling}}"
+
+- cron:
+    name: "cron"
+    minute: "0"
+    hour: "1"
+    job: "cd /srv/comanage/registry-source/app && Console/cake job -q"

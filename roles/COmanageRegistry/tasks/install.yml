@@ -1,0 +1,51 @@
+---
+- name: Create install directory
+  file: path=/srv/comanage state=directory
+
+- name: Download source
+  #shell: cd /srv/comanage; wget https://github.com/Internet2/comanage-registry/archive/3.0.0.tar.gz
+  get_url:
+    # url: https://github.com/Internet2/comanage-registry/archive/3.0.0.tar.gz
+    url: https://github.com/Internet2/comanage-registry/archive/1.0.7.tar.gz
+    dest: /srv/comanage
+    mode: 0440
+
+- name: Extract source
+  #shell: cd /srv/comanage; tar xzf 3.0.0.tar.gz
+  unarchive:
+    # src: /srv/comanage/comanage-registry-3.0.0.tar.gz
+    src: /srv/comanage/comanage-registry-1.0.7.tar.gz
+    dest: /srv/comanage/
+    remote_src: yes
+
+# - name: Create shortcut in the new directory
+#   shell: cd /srv/comanage; ln -s comanage-registry-3.0.0 registry-current
+- file:
+    src: /srv/comanage/comanage-registry-1.0.7
+    dest: /srv/comanage/registry-current
+    owner: root
+    group: root
+    mode: 0644
+    state: link
+
+# - name: Create shortcut in apache directory
+#   shell: cd /var/www/html; ln -s /path/to/registry-current/app/webroot registry
+- file:
+    src: /srv/comanage/registry-current/app/webroot
+    dest: /var/www/html/registry
+    owner: root
+    group: root
+    mode: 0644
+    state: link
+
+- name: Copy tmp.dist
+  shell: cd /srv/comanage/registry-current/app; cp -r tmp.dist /var/cache/registry
+  become: yes
+
+- file:
+    src: /var/cache/registry
+    dest: /srv/comanage/registry-current/local/tmp
+    owner: root
+    group: root
+    mode: 0644
+    state: link
